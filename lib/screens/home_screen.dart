@@ -13,13 +13,45 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController();
   List<Recipe> receitas = List.from(receitasData);
+  String categoriaAtual = 'Todas';
 
   void _embaralharReceitas() {
     setState(() {
       receitas.shuffle(Random());
     });
+    _pageController.jumpToPage(0);
+  }
 
-    _pageController.jumpToPage(0); // volta ao topo
+  void _filtrarPorCategoria(String categoria) {
+    setState(() {
+      categoriaAtual = categoria;
+      if (categoria == 'Todas') {
+        receitas = List.from(receitasData);
+      } else {
+        receitas = receitasData.where((receita) {
+          switch (categoria) {
+            case 'Doces':
+              return ['Bolo de Cenoura', 'Panqueca de Banana', 'Brigadeiro']
+                  .contains(receita.titulo);
+            case 'Salgados':
+              return [
+                'Lasanha à Bolonhesa',
+                'Feijoada',
+                'Moqueca Baiana',
+                'Frango Xadrez',
+                'Escondidinho de Carne',
+                'Risoto de Camarão'
+              ].contains(receita.titulo);
+            case 'Lanches':
+              return ['Pizza Caseira', 'Tacos Mexicanos', 'Coxinha']
+                  .contains(receita.titulo);
+            default:
+              return false;
+          }
+        }).toList();
+      }
+    });
+    _pageController.jumpToPage(0);
   }
 
   @override
@@ -31,10 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.restart_alt),
-            onPressed: () {
-              // Coloque aqui a ação que você quer executar
-              _embaralharReceitas();
-            },
+            onPressed: _embaralharReceitas,
           ),
           SizedBox(width: 16),
         ],
@@ -65,11 +94,51 @@ class _HomeScreenState extends State<HomeScreen> {
             ListTile(
               leading: const Icon(Icons.list),
               title: const Text('Todas as Receitas'),
+              selected: categoriaAtual == 'Todas',
               onTap: () {
                 Navigator.pop(context);
-                // opcional: lógica futura para filtrar ou voltar
+                _filtrarPorCategoria('Todas');
               },
             ),
+            const Divider(),
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'Categorias',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cake),
+              title: const Text('Doces'),
+              selected: categoriaAtual == 'Doces',
+              onTap: () {
+                Navigator.pop(context);
+                _filtrarPorCategoria('Doces');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.restaurant),
+              title: const Text('Salgados'),
+              selected: categoriaAtual == 'Salgados',
+              onTap: () {
+                Navigator.pop(context);
+                _filtrarPorCategoria('Salgados');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.fastfood),
+              title: const Text('Lanches'),
+              selected: categoriaAtual == 'Lanches',
+              onTap: () {
+                Navigator.pop(context);
+                _filtrarPorCategoria('Lanches');
+              },
+            ),
+            const Divider(),
             ListTile(
               leading: const Icon(Icons.favorite_border),
               title: const Text('Favoritas'),
