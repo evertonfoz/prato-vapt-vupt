@@ -7,6 +7,7 @@ class Recipe {
   final String porcoes;
   final List<String> ingredientes;
   final List<String> modoPreparo;
+  bool favorito;
 
   Recipe({
     required this.titulo,
@@ -17,5 +18,6 @@ class Recipe {
     required this.porcoes,
     required this.ingredientes,
     required this.modoPreparo,
+    this.favorito = false,
   });
 }

@@ -14,6 +14,30 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController();
   List<Recipe> receitas = List.from(receitasData);
   String categoriaAtual = 'Todas';
+  List<Recipe> receitasFavoritas = [];
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController.addListener(_onPageChanged);
+  }
+
+  @override
+  void dispose() {
+    _pageController.removeListener(_onPageChanged);
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onPageChanged() {
+    final page = _pageController.page;
+    if (page != null) {
+      setState(() {
+        _currentIndex = page.round();
+      });
+    }
+  }
 
   void _embaralharReceitas() {
     setState(() {
@@ -22,11 +46,24 @@ class _HomeScreenState extends State<HomeScreen> {
     _pageController.jumpToPage(0);
   }
 
+  void _alternarFavorito(Recipe receita) {
+    setState(() {
+      receita.favorito = !receita.favorito;
+      if (receita.favorito) {
+        receitasFavoritas.add(receita);
+      } else {
+        receitasFavoritas.remove(receita);
+      }
+    });
+  }
+
   void _filtrarPorCategoria(String categoria) {
     setState(() {
       categoriaAtual = categoria;
       if (categoria == 'Todas') {
         receitas = List.from(receitasData);
+      } else if (categoria == 'Favoritas') {
+        receitas = List.from(receitasFavoritas);
       } else {
         receitas = receitasData.where((receita) {
           switch (categoria) {
@@ -140,11 +177,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.favorite_border),
+              leading: const Icon(Icons.favorite),
               title: const Text('Favoritas'),
+              selected: categoriaAtual == 'Favoritas',
               onTap: () {
                 Navigator.pop(context);
-                // lógica futura: exibir favoritas
+                _filtrarPorCategoria('Favoritas');
               },
             ),
             ListTile(
@@ -166,20 +204,60 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      body: PageView.builder(
-        controller: _pageController,
-        scrollDirection: Axis.vertical,
-        itemCount: receitas.length,
-        itemBuilder: (context, index) {
-          final receita = receitas[index];
-          return _buildReceitaCard(receita);
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.deepOrange,
-        onPressed: _embaralharReceitas,
-        child: const Icon(Icons.shuffle),
-      ),
+      body: categoriaAtual == 'Favoritas' && receitasFavoritas.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    '❤️',
+                    style: TextStyle(fontSize: 64),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Nenhum favorito por enquanto,\nque tal adicionar o seu?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => _filtrarPorCategoria('Todas'),
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('Voltar para receitas'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepOrange,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : PageView.builder(
+              controller: _pageController,
+              scrollDirection: Axis.vertical,
+              itemCount: receitas.length,
+              itemBuilder: (context, index) {
+                final receita = receitas[index];
+                return _buildReceitaCard(receita);
+              },
+            ),
+      floatingActionButton: receitas.isEmpty
+          ? null
+          : FloatingActionButton(
+              backgroundColor: Colors.deepOrange,
+              onPressed: () => _alternarFavorito(receitas[_currentIndex]),
+              child: Icon(
+                receitas[_currentIndex].favorito
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+              ),
+            ),
     );
   }
 
@@ -189,9 +267,23 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            receita.titulo,
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  receita.titulo,
+                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  receita.favorito ? Icons.favorite : Icons.favorite_border,
+                  color: receita.favorito ? Colors.red : null,
+                ),
+                onPressed: () => _alternarFavorito(receita),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           ClipRRect(
