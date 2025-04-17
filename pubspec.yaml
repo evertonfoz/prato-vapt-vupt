@@ -81,6 +81,8 @@ flutter:
     - assets/images/salada.jfif
     - assets/images/tacos.jfif
     - assets/images/omelete.jfif
+    - assets/fonts/CreamCake.otf
+    - assets/fonts/CreamCakeBold.otf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

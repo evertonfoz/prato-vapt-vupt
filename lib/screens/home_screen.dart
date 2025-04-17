@@ -64,10 +64,34 @@ class _HomeScreenState extends State<HomeScreen> {
   void _alternarFavorito(Recipe receita) {
     setState(() {
       receita.favorito = !receita.favorito;
+
       if (receita.favorito) {
-        receitasFavoritas.add(receita); // Adiciona à lista de favoritos
+        // Adiciona à lista de favoritos se foi marcado
+        if (!receitasFavoritas.contains(receita)) {
+          receitasFavoritas.add(receita);
+        }
       } else {
-        receitasFavoritas.remove(receita); // Remove da lista de favoritos
+        // Remove da lista de favoritos
+        receitasFavoritas.remove(receita);
+
+        // Se estiver na aba Favoritas, também precisa atualizar a lista visível
+        if (categoriaAtual == 'Favoritas') {
+          receitas.remove(receita);
+
+          // Ajusta o índice para mostrar a próxima receita
+          if (receitas.isNotEmpty) {
+            // Se o índice atual ficou fora do alcance, volta pro anterior
+            if (_currentIndex >= receitas.length) {
+              _currentIndex = receitas.length - 1;
+            }
+
+            // Muda para a nova receita visível
+            _pageController.jumpToPage(_currentIndex);
+          } else {
+            // Lista vazia: força reconstrução para mostrar a tela "nenhum favorito"
+            _currentIndex = 0;
+          }
+        }
       }
     });
   }
@@ -119,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
           'Prato Vapt Vupt',
           style: TextStyle(
             fontFamily: 'CreamCake', // Fonte personalizada
-            fontSize: 40,           // Tamanho da fonte
+            fontSize: 30,           // Tamanho da fonte
             fontWeight: FontWeight.bold, // Peso da fonte
           ),
         ),
@@ -291,17 +315,21 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
       // Botão flutuante para alternar o estado de favorito
-      floatingActionButton: receitas.isEmpty
+      // Botão flutuante de "favoritar", só aparece se:
+// - houver receitas na tela
+// - e não estivermos na aba de Favoritos com a lista vazia
+      floatingActionButton: receitas.isEmpty ||
+          (categoriaAtual == 'Favoritas' && receitasFavoritas.isEmpty)
           ? null
           : FloatingActionButton(
-              backgroundColor: Colors.deepOrange,
-              onPressed: () => _alternarFavorito(receitas[_currentIndex]),
-              child: Icon(
-                receitas[_currentIndex].favorito
-                    ? Icons.favorite
-                    : Icons.favorite_border,
-              ),
-            ),
+        backgroundColor: Colors.deepOrange,
+        onPressed: () => _alternarFavorito(receitas[_currentIndex]),
+        child: Icon(
+          receitas[_currentIndex].favorito
+              ? Icons.favorite
+              : Icons.favorite_border,
+        ),
+      ),
     );
   }
 
@@ -310,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Calcula tamanhos proporcionais com base no tamanho da tela
-        final double imageHeight = constraints.maxHeight * 0.15; // Reduzido para 15% da altura disponível
+        final double imageHeight = constraints.maxHeight * 0.25; // Reduzido para 15% da altura disponível
         final double fontSizeTitle = constraints.maxHeight * 0.03; // 3% da altura disponível
         final double fontSizeText = constraints.maxHeight * 0.02; // 2% da altura disponível
 
