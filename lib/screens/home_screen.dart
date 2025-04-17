@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/recipe_data.dart';
 import '../models/recipe.dart';
 
+// Classe principal da tela inicial do aplicativo
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -11,25 +12,37 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Controlador para o PageView (navegação vertical entre receitas)
   final PageController _pageController = PageController();
+
+  // Lista de receitas carregadas inicialmente a partir de receitasData
   List<Recipe> receitas = List.from(receitasData);
+
+  // Categoria atualmente selecionada no filtro
   String categoriaAtual = 'Todas';
+
+  // Lista de receitas marcadas como favoritas
   List<Recipe> receitasFavoritas = [];
+
+  // Índice atual da página no PageView
   int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    // Adiciona um listener para monitorar mudanças de página no PageView
     _pageController.addListener(_onPageChanged);
   }
 
   @override
   void dispose() {
+    // Remove o listener e libera o controlador ao descartar a tela
     _pageController.removeListener(_onPageChanged);
     _pageController.dispose();
     super.dispose();
   }
 
+  // Atualiza o índice da página atual ao mudar de página no PageView
   void _onPageChanged() {
     final page = _pageController.page;
     if (page != null) {
@@ -39,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Embaralha a lista de receitas e volta para a primeira página
   void _embaralharReceitas() {
     setState(() {
       receitas.shuffle(Random());
@@ -46,25 +60,30 @@ class _HomeScreenState extends State<HomeScreen> {
     _pageController.jumpToPage(0);
   }
 
+  // Alterna o estado de favorito de uma receita
   void _alternarFavorito(Recipe receita) {
     setState(() {
       receita.favorito = !receita.favorito;
       if (receita.favorito) {
-        receitasFavoritas.add(receita);
+        receitasFavoritas.add(receita); // Adiciona à lista de favoritos
       } else {
-        receitasFavoritas.remove(receita);
+        receitasFavoritas.remove(receita); // Remove da lista de favoritos
       }
     });
   }
 
+  // Filtra as receitas com base na categoria selecionada
   void _filtrarPorCategoria(String categoria) {
     setState(() {
       categoriaAtual = categoria;
       if (categoria == 'Todas') {
+        // Mostra todas as receitas
         receitas = List.from(receitasData);
       } else if (categoria == 'Favoritas') {
+        // Mostra apenas as receitas favoritas
         receitas = List.from(receitasFavoritas);
       } else {
+        // Filtra receitas por categorias específicas
         receitas = receitasData.where((receita) {
           switch (categoria) {
             case 'Doces':
@@ -88,16 +107,25 @@ class _HomeScreenState extends State<HomeScreen> {
         }).toList();
       }
     });
-    _pageController.jumpToPage(0);
+    _pageController.jumpToPage(0); // Volta para a primeira página
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Barra superior do aplicativo
       appBar: AppBar(
-        title: const Text('Prato Vapt Vupt'),
-        backgroundColor: Colors.deepOrange,
+        title: const Text(
+          'Prato Vapt Vupt',
+          style: TextStyle(
+            fontFamily: 'CreamCake', // Fonte personalizada
+            fontSize: 40,           // Tamanho da fonte
+            fontWeight: FontWeight.bold, // Peso da fonte
+          ),
+        ),
+        backgroundColor: Colors.deepOrange, // Cor de fundo do AppBar
         actions: [
+          // Botão para embaralhar receitas
           IconButton(
             icon: Icon(Icons.restart_alt),
             onPressed: _embaralharReceitas,
@@ -105,10 +133,12 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(width: 16),
         ],
       ),
+      // Menu lateral (Drawer)
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
+            // Cabeçalho do menu
             DrawerHeader(
               decoration: const BoxDecoration(
                 color: Colors.deepOrange,
@@ -128,6 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
+            // Opções do menu
             ListTile(
               leading: const Icon(Icons.list),
               title: const Text('Todas as Receitas'),
@@ -148,6 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+            // Categorias específicas
             ListTile(
               leading: const Icon(Icons.cake),
               title: const Text('Doces'),
@@ -176,6 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             const Divider(),
+            // Favoritas e Sobre o App
             ListTile(
               leading: const Icon(Icons.favorite),
               title: const Text('Favoritas'),
@@ -204,8 +237,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+      // Corpo principal da tela
       body: categoriaAtual == 'Favoritas' && receitasFavoritas.isEmpty
           ? Center(
+              // Mensagem quando não há favoritos
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -238,15 +273,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             )
-          : PageView.builder(
-              controller: _pageController,
-              scrollDirection: Axis.vertical,
-              itemCount: receitas.length,
-              itemBuilder: (context, index) {
-                final receita = receitas[index];
-                return _buildReceitaCard(receita);
+          : GestureDetector(
+              onVerticalDragUpdate: (details) {
+                // Atualiza a posição do PageView com base no gesto
+                _pageController.position.moveTo(
+                  _pageController.position.pixels - details.delta.dy,
+                );
               },
+              child: PageView.builder(
+                controller: _pageController,
+                scrollDirection: Axis.vertical,
+                itemCount: receitas.length,
+                itemBuilder: (context, index) {
+                  final receita = receitas[index];
+                  return _buildReceitaCard(receita);
+                },
+              ),
             ),
+      // Botão flutuante para alternar o estado de favorito
       floatingActionButton: receitas.isEmpty
           ? null
           : FloatingActionButton(
@@ -261,65 +305,83 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Constrói o card de uma receita
   Widget _buildReceitaCard(Recipe receita) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calcula tamanhos proporcionais com base no tamanho da tela
+        final double imageHeight = constraints.maxHeight * 0.15; // Reduzido para 15% da altura disponível
+        final double fontSizeTitle = constraints.maxHeight * 0.03; // 3% da altura disponível
+        final double fontSizeText = constraints.maxHeight * 0.02; // 2% da altura disponível
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  receita.titulo,
-                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      receita.titulo,
+                      style: TextStyle(
+                        fontSize: fontSizeTitle, // Tamanho proporcional ao título
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      receita.favorito ? Icons.favorite : Icons.favorite_border,
+                      color: receita.favorito ? Colors.red : null,
+                    ),
+                    onPressed: () => _alternarFavorito(receita),
+                  ),
+                ],
+              ),
+              SizedBox(height: constraints.maxHeight * 0.02), // Espaçamento proporcional
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  receita.imagem,
+                  height: imageHeight, // Altura reduzida da imagem
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                 ),
               ),
-              IconButton(
-                icon: Icon(
-                  receita.favorito ? Icons.favorite : Icons.favorite_border,
-                  color: receita.favorito ? Colors.red : null,
-                ),
-                onPressed: () => _alternarFavorito(receita),
+              SizedBox(height: constraints.maxHeight * 0.02),
+              Text(
+                receita.descricao,
+                style: TextStyle(fontSize: fontSizeText), // Tamanho proporcional do texto
               ),
+              SizedBox(height: constraints.maxHeight * 0.02),
+              Text('Autor: ${receita.autor}', style: TextStyle(fontSize: fontSizeText)),
+              Text('Tempo: ${receita.tempoPreparo}', style: TextStyle(fontSize: fontSizeText)),
+              Text('Porções: ${receita.porcoes}', style: TextStyle(fontSize: fontSizeText)),
+              Divider(height: constraints.maxHeight * 0.04),
+              Text(
+                'Ingredientes:',
+                style: TextStyle(fontSize: fontSizeTitle, fontWeight: FontWeight.bold),
+              ),
+              ...receita.ingredientes.map(
+                (item) => Text('- $item', style: TextStyle(fontSize: fontSizeText)),
+              ),
+              Divider(height: constraints.maxHeight * 0.04),
+              Text(
+                'Modo de Preparo:',
+                style: TextStyle(fontSize: fontSizeTitle, fontWeight: FontWeight.bold),
+              ),
+              ...receita.modoPreparo.asMap().entries.map(
+                    (e) => Text(
+                      '${e.key + 1}. ${e.value}',
+                      style: TextStyle(fontSize: fontSizeText),
+                    ),
+                  ),
             ],
           ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.asset(
-              receita.imagem,
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            receita.descricao,
-            style: const TextStyle(fontSize: 16),
-          ),
-          const SizedBox(height: 10),
-          Text('Autor: ${receita.autor}'),
-          Text('Tempo: ${receita.tempoPreparo}'),
-          Text('Porções: ${receita.porcoes}'),
-          const Divider(height: 30),
-          const Text(
-            'Ingredientes:',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          ...receita.ingredientes.map((item) => Text('- $item')),
-          const Divider(height: 30),
-          const Text(
-            'Modo de Preparo:',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          ...receita.modoPreparo.asMap().entries.map(
-                (e) => Text('${e.key + 1}. ${e.value}'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
